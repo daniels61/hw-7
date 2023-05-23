@@ -31,8 +31,9 @@ def get_all_posts():
     records = cursor.fetchall()
     cursor.close()
     print(records)
-    # [(1, 'Herzliya', 95142), (2, 'Tel Aviv', 435855), (3, 'Jerusalem', 874186), (4, 'Bat Yam', 128898), (5, 'Ramat Gan', 153135), (6, 'Eilat', 47800), (7, 'Petah Tikva', 233577), (8, 'Tveriya', 41300)]
-    header = ['id', 'title', 'body', 'user_id', 'comment_id', 'tag_id', 'created_at', 'img']
+
+
+    header = ['id','title', 'body','user_id','comment_id','tag_id','created_at','img']
     data = []
     for r in records:
         data.append(dict(zip(header, r)))
@@ -46,22 +47,23 @@ def get_post(id):
     cursor.execute(query, values)
     record = cursor.fetchone()
     cursor.close()
-    header = ['id', 'name', 'population']
+    header = ['id', 'title', 'body', 'user_id', 'comment_id', 'tag_id', 'created_at', 'img']
     return json.dumps(dict(zip(header, record)))
 
 
 def add_post():
     data = request.get_json()
     print(data)
-    query = "insert into posts (title, body, img) values (%s, %s, %s)"
-    values = (data['title'], data['body'], data['img'])
+    query = "INSERT INTO posts (title, body, img, user_id, comment_id, tag_id, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+
+    values = (data['title'], data['body'], data['img'], data['user_id'],data['comment_id'],data['tag_id'],data['created_at'])
+
     cursor = db.cursor()
     cursor.execute(query, values)
     db.commit()
     new_post_id = cursor.lastrowid
     cursor.close()
     return get_post(new_post_id)
-
 
 if __name__ == "__main__":
     app.run()
