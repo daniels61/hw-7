@@ -57,6 +57,7 @@ def add_post():
     query = "INSERT INTO posts ( title, body) VALUES (%s, %s)"
     values = (data['title'], data['body'])
 
+
     cursor = db.cursor()
     cursor.execute(query, values)
     db.commit()
