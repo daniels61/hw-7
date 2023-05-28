@@ -1,9 +1,11 @@
 
 
-from flask import Flask, request
+from flask import Flask, request, abort, make_response
 from settings import dbpwd
 import mysql.connector as mysql
 import json
+import uuid
+import bcrypt
 
 db = mysql.connect(
     host="localhost",
@@ -65,5 +67,55 @@ def add_post():
     cursor.close()
     return get_post(new_post_id)
 
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    print(data)
+    query = "select id, username, password from users where username = %s"
+    values = (data['user'],)
+    cursor = db.cursor()
+    cursor.execute(query, values)
+    record = cursor.fetchone()
+    cursor.close()
+
+    if not record:
+        abort(401)
+
+    user_id = record[0]
+    hashed_pwd = record[2].encode('utf-8')
+
+    if bcrypt.hashpw(data['pass'].encode('utf-8'), bcrypt.gensalt()) == hashed_pwd:
+        abort(401)
+
+    query = "insert into sessions (user_id, session_id) values (%s, %s)"
+    session_id = str(uuid.uuid4())
+    values = (record[0], session_id)
+    cursor = db.cursor()
+    cursor.execute(query, values)
+    db.commit()
+    cursor.close()
+    resp = make_response()
+    resp.set_cookie("session_id", session_id)
+    return resp
+
+
+
+
 if __name__ == "__main__":
+    # hashed = bcrypt.hashpw("1234".encode('utf-8'), bcrypt.gensalt())
     app.run()
+
+
+    def check_login():
+        session_id = request.cookies.get("session_id")
+        if not session_id:
+            abort(401)
+        query = "select user_id from sessions where session_id = %s"
+        values = (session_id,)
+        cursor = db.cursor()
+        cursor.execute(query, values)
+        record = cursor.fetchone()
+        cursor.close()
+        if not record:
+            abort(401)
